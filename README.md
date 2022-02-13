@@ -1,4 +1,4 @@
-# realcugan ncnn Vulkan
+# Real-CUGAN ncnn Vulkan
 
 :exclamation: :exclamation: :exclamation: This software is in the early development stage, it may bite your cat
 
