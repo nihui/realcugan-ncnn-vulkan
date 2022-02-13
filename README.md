@@ -5,7 +5,7 @@
 ![CI](https://github.com/nihui/realcugan-ncnn-vulkan/workflows/CI/badge.svg)
 ![download](https://img.shields.io/github/downloads/nihui/realcugan-ncnn-vulkan/total.svg)
 
-ncnn implementation of realcugan converter. Runs fast on Intel / AMD / Nvidia with Vulkan API.
+ncnn implementation of Real-CUGAN converter. Runs fast on Intel / AMD / Nvidia with Vulkan API.
 
 realcugan-ncnn-vulkan uses [ncnn project](https://github.com/Tencent/ncnn) as the universal neural network inference framework.
 
@@ -16,6 +16,12 @@ Download Windows/Linux/MacOS Executable for Intel/AMD/Nvidia GPU
 **https://github.com/nihui/realcugan-ncnn-vulkan/releases**
 
 This package includes all the binaries and models required. It is portable, so no CUDA or PyTorch runtime environment is needed :)
+
+## About Real-CUGAN
+
+Real-CUGAN (Real Cascade U-Nets for Anime Image Super Resolution)
+
+https://github.com/bilibili/ailab/tree/main/Real-CUGAN
 
 ## Usages
 
@@ -111,7 +117,7 @@ convert origin.jpg -filter Lanczos -resize 200% output.png
 
 ![browser](images/4.png)
 
-### Upscale 2x with realcugan
+### Upscale 2x with Real-CUGAN
 
 ```shell
 realcugan-ncnn-vulkan.exe -i origin.jpg -o output.png
@@ -119,7 +125,7 @@ realcugan-ncnn-vulkan.exe -i origin.jpg -o output.png
 
 ![realcugan](images/2.png)
 
-## Original realcugan Project
+## Original Real-CUGAN Project
 
 - https://github.com/bilibili/ailab/tree/main/Real-CUGAN
 
