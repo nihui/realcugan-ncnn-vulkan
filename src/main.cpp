@@ -818,7 +818,7 @@ int main(int argc, char** argv)
         if (gpuid[i] == -1)
         {
             // cpu only
-            tilesize[i] = 4000;
+            tilesize[i] = 400;
             continue;
         }
 
