@@ -108,7 +108,7 @@ static void print_usage()
     fprintf(stdout, "  -n noise-level       denoise level (-1/0/1/2/3, default=-1)\n");
     fprintf(stdout, "  -s scale             upscale ratio (1/2/3/4, default=2)\n");
     fprintf(stdout, "  -t tile-size         tile size (>=32/0=auto, default=0) can be 0,0,0 for multi-gpu\n");
-    fprintf(stdout, "  -m model-path        realcugan model path (default=models-nose)\n");
+    fprintf(stdout, "  -m model-path        realcugan model path (default=models-se)\n");
     fprintf(stdout, "  -g gpu-id            gpu device to use (-1=cpu, default=auto) can be 0,1,2 for multi-gpu\n");
     fprintf(stdout, "  -j load:proc:save    thread count for load/proc/save (default=1:2:2) can be 1:2,2,2:2 for multi-gpu\n");
     fprintf(stdout, "  -x                   enable tta mode\n");
@@ -335,37 +335,8 @@ void* proc(void* args)
             continue;
         }
 
-        int scale_run_count = 0;
-        if (scale == 2)
-        {
-            scale_run_count = 1;
-        }
-        if (scale == 4)
-        {
-            scale_run_count = 2;
-        }
-        if (scale == 8)
-        {
-            scale_run_count = 3;
-        }
-        if (scale == 16)
-        {
-            scale_run_count = 4;
-        }
-        if (scale == 32)
-        {
-            scale_run_count = 5;
-        }
-
-        v.outimage = ncnn::Mat(v.inimage.w * 2, v.inimage.h * 2, (size_t)v.inimage.elemsize, (int)v.inimage.elemsize);
+        v.outimage = ncnn::Mat(v.inimage.w * scale, v.inimage.h * scale, (size_t)v.inimage.elemsize, (int)v.inimage.elemsize);
         realcugan->process(v.inimage, v.outimage);
-
-        for (int i = 1; i < scale_run_count; i++)
-        {
-            ncnn::Mat tmp = v.outimage;
-            v.outimage = ncnn::Mat(tmp.w * 2, tmp.h * 2, (size_t)v.inimage.elemsize, (int)v.inimage.elemsize);
-            realcugan->process(tmp, v.outimage);
-        }
 
         tosave.put(v);
     }
@@ -470,7 +441,7 @@ int main(int argc, char** argv)
     int noise = -1;
     int scale = 2;
     std::vector<int> tilesize;
-    path_t model = PATHSTR("models-nose");
+    path_t model = PATHSTR("models-se");
     std::vector<int> gpuid;
     int jobs_load = 1;
     std::vector<int> jobs_proc;
@@ -586,7 +557,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    if (!(scale == 1 || scale == 2 || scale == 4 || scale == 8 || scale == 16 || scale == 32))
+    if (!(scale == 1 || scale == 2 || scale == 3 || scale == 4))
     {
         fprintf(stderr, "invalid scale argument\n");
         return -1;
@@ -718,7 +689,18 @@ int main(int argc, char** argv)
 
     if (model.find(PATHSTR("models-se")) != path_t::npos || model.find(PATHSTR("models-nose")) != path_t::npos)
     {
-        prepadding = 18;
+        if (scale == 2)
+        {
+            prepadding = 18;
+        }
+        if (scale == 3)
+        {
+            prepadding = 14;
+        }
+        if (scale == 4)
+        {
+            prepadding = 19;
+        }
     }
     else
     {
@@ -730,6 +712,11 @@ int main(int argc, char** argv)
     wchar_t parampath[256];
     wchar_t modelpath[256];
     if (noise == -1)
+    {
+        swprintf(parampath, 256, L"%s/up%dx-conservative.param", model.c_str(), scale);
+        swprintf(modelpath, 256, L"%s/up%dx-conservative.bin", model.c_str(), scale);
+    }
+    else if (noise == 0)
     {
         swprintf(parampath, 256, L"%s/up%dx-no-denoise.param", model.c_str(), scale);
         swprintf(modelpath, 256, L"%s/up%dx-no-denoise.bin", model.c_str(), scale);
@@ -743,6 +730,11 @@ int main(int argc, char** argv)
     char parampath[256];
     char modelpath[256];
     if (noise == -1)
+    {
+        sprintf(parampath, "%s/up%dx-conservative.param", model.c_str(), scale);
+        sprintf(modelpath, "%s/up%dx-conservative.bin", model.c_str(), scale);
+    }
+    else if (noise == 0)
     {
         sprintf(parampath, "%s/up%dx-no-denoise.param", model.c_str(), scale);
         sprintf(modelpath, "%s/up%dx-no-denoise.bin", model.c_str(), scale);
@@ -850,7 +842,7 @@ int main(int argc, char** argv)
             realcugan[i]->load(paramfullpath, modelfullpath);
 
             realcugan[i]->noise = noise;
-            realcugan[i]->scale = (scale >= 2) ? 2 : scale;
+            realcugan[i]->scale = scale;
             realcugan[i]->tilesize = tilesize[i];
             realcugan[i]->prepadding = prepadding;
         }

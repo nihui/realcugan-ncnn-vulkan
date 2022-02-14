@@ -26,6 +26,19 @@ public:
 
     int process_cpu(const ncnn::Mat& inimage, ncnn::Mat& outimage) const;
 
+    int process_se(const ncnn::Mat& inimage, ncnn::Mat& outimage) const;
+
+    int process_cpu_se(const ncnn::Mat& inimage, ncnn::Mat& outimage) const;
+
+protected:
+    int process_se_stage0(const ncnn::Mat& inimage, const std::vector<std::string>& names, const std::vector<std::string>& outnames, const ncnn::Option& opt) const;
+    int process_se_stage2(const ncnn::Mat& inimage, const std::vector<std::string>& names, ncnn::Mat& outimage, const ncnn::Option& opt) const;
+    int process_se_sync_gap(const ncnn::Mat& inimage, const std::vector<std::string>& names, const ncnn::Option& opt) const;
+
+    int process_cpu_se_stage0(const ncnn::Mat& inimage, const std::vector<std::string>& names, const std::vector<std::string>& outnames) const;
+    int process_cpu_se_stage2(const ncnn::Mat& inimage, const std::vector<std::string>& names, ncnn::Mat& outimage) const;
+    int process_cpu_se_sync_gap(const ncnn::Mat& inimage, const std::vector<std::string>& names) const;
+
 public:
     // realcugan parameters
     int noise;
