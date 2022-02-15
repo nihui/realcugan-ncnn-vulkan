@@ -120,7 +120,7 @@ convert origin.jpg -filter Lanczos -resize 200% output.png
 ### Upscale 2x with Real-CUGAN
 
 ```shell
-realcugan-ncnn-vulkan.exe -i origin.jpg -o output.png
+realcugan-ncnn-vulkan.exe -i origin.jpg -o output.png -s 2 -n 1 -x
 ```
 
 ![realcugan](images/2.png)
