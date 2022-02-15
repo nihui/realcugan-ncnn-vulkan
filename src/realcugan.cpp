@@ -974,34 +974,34 @@ int RealCUGAN::process_se(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
     FeatureCache cache;
 
     std::vector<std::string> in0 = {};
-    std::vector<std::string> out0 = {"11"};
+    std::vector<std::string> out0 = {"gap0"};
     process_se_stage0(inimage, in0, out0, opt, cache);
 
-    std::vector<std::string> gap0 = {"11"};
+    std::vector<std::string> gap0 = {"gap0"};
     process_se_sync_gap(inimage, gap0, opt, cache);
 
-    std::vector<std::string> in1 = {"11"};
-    std::vector<std::string> out1 = {"31"};
+    std::vector<std::string> in1 = {"gap0"};
+    std::vector<std::string> out1 = {"gap1"};
     process_se_stage0(inimage, in1, out1, opt, cache);
 
-    std::vector<std::string> gap1 = {"31"};
+    std::vector<std::string> gap1 = {"gap1"};
     process_se_sync_gap(inimage, gap1, opt, cache);
 
-    std::vector<std::string> in2 = {"11", "31"};
-    std::vector<std::string> out2 = {"42"};
+    std::vector<std::string> in2 = {"gap0", "gap1"};
+    std::vector<std::string> out2 = {"gap2"};
     process_se_stage0(inimage, in2, out2, opt, cache);
 
-    std::vector<std::string> gap2 = {"42"};
+    std::vector<std::string> gap2 = {"gap2"};
     process_se_sync_gap(inimage, gap2, opt, cache);
 
-    std::vector<std::string> in3 = {"11", "31", "42"};
-    std::vector<std::string> out3 = {"53"};
+    std::vector<std::string> in3 = {"gap0", "gap1", "gap2"};
+    std::vector<std::string> out3 = {"gap3"};
     process_se_stage0(inimage, in3, out3, opt, cache);
 
-    std::vector<std::string> gap3 = {"53"};
+    std::vector<std::string> gap3 = {"gap3"};
     process_se_sync_gap(inimage, gap3, opt, cache);
 
-    std::vector<std::string> in4 = {"11", "31", "42", "53"};
+    std::vector<std::string> in4 = {"gap0", "gap1", "gap2", "gap3"};
     process_se_stage2(inimage, in4, outimage, opt, cache);
 
     cache.clear();
@@ -1017,34 +1017,34 @@ int RealCUGAN::process_cpu_se(const ncnn::Mat& inimage, ncnn::Mat& outimage) con
     FeatureCache cache;
 
     std::vector<std::string> in0 = {};
-    std::vector<std::string> out0 = {"11"};
+    std::vector<std::string> out0 = {"gap0"};
     process_cpu_se_stage0(inimage, in0, out0, cache);
 
-    std::vector<std::string> gap0 = {"11"};
+    std::vector<std::string> gap0 = {"gap0"};
     process_cpu_se_sync_gap(inimage, gap0, cache);
 
-    std::vector<std::string> in1 = {"11"};
-    std::vector<std::string> out1 = {"31"};
+    std::vector<std::string> in1 = {"gap0"};
+    std::vector<std::string> out1 = {"gap1"};
     process_cpu_se_stage0(inimage, in1, out1, cache);
 
-    std::vector<std::string> gap1 = {"31"};
+    std::vector<std::string> gap1 = {"gap1"};
     process_cpu_se_sync_gap(inimage, gap1, cache);
 
-    std::vector<std::string> in2 = {"11", "31"};
-    std::vector<std::string> out2 = {"42"};
+    std::vector<std::string> in2 = {"gap0", "gap1"};
+    std::vector<std::string> out2 = {"gap2"};
     process_cpu_se_stage0(inimage, in2, out2, cache);
 
-    std::vector<std::string> gap2 = {"42"};
+    std::vector<std::string> gap2 = {"gap2"};
     process_cpu_se_sync_gap(inimage, gap2, cache);
 
-    std::vector<std::string> in3 = {"11", "31", "42"};
-    std::vector<std::string> out3 = {"53"};
+    std::vector<std::string> in3 = {"gap0", "gap1", "gap2"};
+    std::vector<std::string> out3 = {"gap3"};
     process_cpu_se_stage0(inimage, in3, out3, cache);
 
-    std::vector<std::string> gap3 = {"53"};
+    std::vector<std::string> gap3 = {"gap3"};
     process_cpu_se_sync_gap(inimage, gap3, cache);
 
-    std::vector<std::string> in4 = {"11", "31", "42", "53"};
+    std::vector<std::string> in4 = {"gap0", "gap1", "gap2", "gap3"};
     process_cpu_se_stage2(inimage, in4, outimage, cache);
 
     cache.clear();
