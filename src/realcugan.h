@@ -53,8 +53,10 @@ private:
     ncnn::Net net;
     ncnn::Pipeline* realcugan_preproc;
     ncnn::Pipeline* realcugan_postproc;
+    ncnn::Pipeline* realcugan_4x_postproc;
     ncnn::Layer* bicubic_2x;
     ncnn::Layer* bicubic_3x;
+    ncnn::Layer* bicubic_4x;
     bool tta_mode;
 };
 

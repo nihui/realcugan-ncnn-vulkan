@@ -11,8 +11,10 @@
 
 #include "realcugan_preproc.comp.hex.h"
 #include "realcugan_postproc.comp.hex.h"
+#include "realcugan_4x_postproc.comp.hex.h"
 #include "realcugan_preproc_tta.comp.hex.h"
 #include "realcugan_postproc_tta.comp.hex.h"
+#include "realcugan_4x_postproc_tta.comp.hex.h"
 
 class FeatureCache
 {
@@ -61,8 +63,10 @@ RealCUGAN::RealCUGAN(int gpuid, bool _tta_mode, int num_threads)
 
     realcugan_preproc = 0;
     realcugan_postproc = 0;
+    realcugan_4x_postproc = 0;
     bicubic_2x = 0;
     bicubic_3x = 0;
+    bicubic_4x = 0;
     tta_mode = _tta_mode;
 }
 
@@ -79,6 +83,9 @@ RealCUGAN::~RealCUGAN()
 
     bicubic_3x->destroy_pipeline(net.opt);
     delete bicubic_3x;
+
+    bicubic_4x->destroy_pipeline(net.opt);
+    delete bicubic_4x;
 }
 
 #if _WIN32
@@ -170,9 +177,28 @@ int RealCUGAN::load(const std::string& parampath, const std::string& modelpath)
             realcugan_postproc->set_optimal_local_size_xyz(8, 8, 3);
             realcugan_postproc->create(spirv.data(), spirv.size() * 4, specializations);
         }
+
+        {
+            static std::vector<uint32_t> spirv;
+            static ncnn::Mutex lock;
+            {
+                ncnn::MutexLockGuard guard(lock);
+                if (spirv.empty())
+                {
+                    if (tta_mode)
+                        compile_spirv_module(realcugan_4x_postproc_tta_comp_data, sizeof(realcugan_4x_postproc_tta_comp_data), net.opt, spirv);
+                    else
+                        compile_spirv_module(realcugan_4x_postproc_comp_data, sizeof(realcugan_4x_postproc_comp_data), net.opt, spirv);
+                }
+            }
+
+            realcugan_4x_postproc = new ncnn::Pipeline(vkdev);
+            realcugan_4x_postproc->set_optimal_local_size_xyz(8, 8, 3);
+            realcugan_4x_postproc->create(spirv.data(), spirv.size() * 4, specializations);
+        }
     }
 
-    // bicubic 2x/3x for alpha channel
+    // bicubic 2x/3x/4x for alpha channel
     {
         bicubic_2x = ncnn::create_layer("Interp");
         bicubic_2x->vkdev = vkdev;
@@ -196,6 +222,18 @@ int RealCUGAN::load(const std::string& parampath, const std::string& modelpath)
         bicubic_3x->load_param(pd);
 
         bicubic_3x->create_pipeline(net.opt);
+    }
+    {
+        bicubic_4x = ncnn::create_layer("Interp");
+        bicubic_4x->vkdev = vkdev;
+
+        ncnn::ParamDict pd;
+        pd.set(0, 3);// bicubic
+        pd.set(1, 4.f);
+        pd.set(2, 4.f);
+        bicubic_4x->load_param(pd);
+
+        bicubic_4x->create_pipeline(net.opt);
     }
 
     return 0;
@@ -420,9 +458,54 @@ int RealCUGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
                     {
                         bicubic_3x->forward(in_alpha_tile_gpu, out_alpha_tile_gpu, cmd, opt);
                     }
+                    if (scale == 4)
+                    {
+                        bicubic_4x->forward(in_alpha_tile_gpu, out_alpha_tile_gpu, cmd, opt);
+                    }
                 }
 
                 // postproc
+                if (scale == 4)
+                {
+                    std::vector<ncnn::VkMat> bindings(11);
+                    bindings[0] = in_gpu;
+                    bindings[1] = out_tile_gpu[0];
+                    bindings[2] = out_tile_gpu[1];
+                    bindings[3] = out_tile_gpu[2];
+                    bindings[4] = out_tile_gpu[3];
+                    bindings[5] = out_tile_gpu[4];
+                    bindings[6] = out_tile_gpu[5];
+                    bindings[7] = out_tile_gpu[6];
+                    bindings[8] = out_tile_gpu[7];
+                    bindings[9] = out_alpha_tile_gpu;
+                    bindings[10] = out_gpu;
+
+                    std::vector<ncnn::vk_constant_type> constants(16);
+                    constants[0].i = in_gpu.w;
+                    constants[1].i = in_gpu.h;
+                    constants[2].i = in_gpu.cstep;
+                    constants[3].i = out_tile_gpu[0].w;
+                    constants[4].i = out_tile_gpu[0].h;
+                    constants[5].i = out_tile_gpu[0].cstep;
+                    constants[6].i = out_gpu.w;
+                    constants[7].i = out_gpu.h;
+                    constants[8].i = out_gpu.cstep;
+                    constants[9].i = xi * TILE_SIZE_X;
+                    constants[10].i = std::min(yi * TILE_SIZE_Y, prepadding);
+                    constants[11].i = xi * TILE_SIZE_X * scale;
+                    constants[12].i = std::min(TILE_SIZE_X * scale, out_gpu.w - xi * TILE_SIZE_X * scale);
+                    constants[13].i = channels;
+                    constants[14].i = out_alpha_tile_gpu.w;
+                    constants[15].i = out_alpha_tile_gpu.h;
+
+                    ncnn::VkMat dispatcher;
+                    dispatcher.w = std::min(TILE_SIZE_X * scale, out_gpu.w - xi * TILE_SIZE_X * scale);
+                    dispatcher.h = out_gpu.h;
+                    dispatcher.c = channels;
+
+                    cmd.record_pipeline(realcugan_4x_postproc, bindings, constants, dispatcher);
+                }
+                else
                 {
                     std::vector<ncnn::VkMat> bindings(10);
                     bindings[0] = out_tile_gpu[0];
@@ -533,9 +616,47 @@ int RealCUGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
                     {
                         bicubic_3x->forward(in_alpha_tile_gpu, out_alpha_tile_gpu, cmd, opt);
                     }
+                    if (scale == 4)
+                    {
+                        bicubic_4x->forward(in_alpha_tile_gpu, out_alpha_tile_gpu, cmd, opt);
+                    }
                 }
 
                 // postproc
+                if (scale == 4)
+                {
+                    std::vector<ncnn::VkMat> bindings(4);
+                    bindings[0] = in_gpu;
+                    bindings[1] = out_tile_gpu;
+                    bindings[2] = out_alpha_tile_gpu;
+                    bindings[3] = out_gpu;
+
+                    std::vector<ncnn::vk_constant_type> constants(16);
+                    constants[0].i = in_gpu.w;
+                    constants[1].i = in_gpu.h;
+                    constants[2].i = in_gpu.cstep;
+                    constants[3].i = out_tile_gpu.w;
+                    constants[4].i = out_tile_gpu.h;
+                    constants[5].i = out_tile_gpu.cstep;
+                    constants[6].i = out_gpu.w;
+                    constants[7].i = out_gpu.h;
+                    constants[8].i = out_gpu.cstep;
+                    constants[9].i = xi * TILE_SIZE_X;
+                    constants[10].i = std::min(yi * TILE_SIZE_Y, prepadding);
+                    constants[11].i = xi * TILE_SIZE_X * scale;
+                    constants[12].i = std::min(TILE_SIZE_X * scale, out_gpu.w - xi * TILE_SIZE_X * scale);
+                    constants[13].i = channels;
+                    constants[14].i = out_alpha_tile_gpu.w;
+                    constants[15].i = out_alpha_tile_gpu.h;
+
+                    ncnn::VkMat dispatcher;
+                    dispatcher.w = std::min(TILE_SIZE_X * scale, out_gpu.w - xi * TILE_SIZE_X * scale);
+                    dispatcher.h = out_gpu.h;
+                    dispatcher.c = channels;
+
+                    cmd.record_pipeline(realcugan_4x_postproc, bindings, constants, dispatcher);
+                }
+                else
                 {
                     std::vector<ncnn::VkMat> bindings(3);
                     bindings[0] = out_tile_gpu;
@@ -805,6 +926,10 @@ int RealCUGAN::process_cpu(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
                     {
                         bicubic_3x->forward(in_alpha_tile, out_alpha_tile, opt);
                     }
+                    if (scale == 4)
+                    {
+                        bicubic_4x->forward(in_alpha_tile, out_alpha_tile, opt);
+                    }
                 }
 
                 // postproc and merge alpha
@@ -909,6 +1034,10 @@ int RealCUGAN::process_cpu(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
                     if (scale == 3)
                     {
                         bicubic_3x->forward(in_alpha_tile, out_alpha_tile, opt);
+                    }
+                    if (scale == 4)
+                    {
+                        bicubic_4x->forward(in_alpha_tile, out_alpha_tile, opt);
                     }
                 }
 
@@ -1530,9 +1659,54 @@ int RealCUGAN::process_se_stage2(const ncnn::Mat& inimage, const std::vector<std
                     {
                         bicubic_3x->forward(in_alpha_tile_gpu, out_alpha_tile_gpu, cmd, opt);
                     }
+                    if (scale == 4)
+                    {
+                        bicubic_4x->forward(in_alpha_tile_gpu, out_alpha_tile_gpu, cmd, opt);
+                    }
                 }
 
                 // postproc
+                if (scale == 4)
+                {
+                    std::vector<ncnn::VkMat> bindings(11);
+                    bindings[0] = in_gpu;
+                    bindings[1] = out_tile_gpu[0];
+                    bindings[2] = out_tile_gpu[1];
+                    bindings[3] = out_tile_gpu[2];
+                    bindings[4] = out_tile_gpu[3];
+                    bindings[5] = out_tile_gpu[4];
+                    bindings[6] = out_tile_gpu[5];
+                    bindings[7] = out_tile_gpu[6];
+                    bindings[8] = out_tile_gpu[7];
+                    bindings[9] = out_alpha_tile_gpu;
+                    bindings[10] = out_gpu;
+
+                    std::vector<ncnn::vk_constant_type> constants(16);
+                    constants[0].i = in_gpu.w;
+                    constants[1].i = in_gpu.h;
+                    constants[2].i = in_gpu.cstep;
+                    constants[3].i = out_tile_gpu[0].w;
+                    constants[4].i = out_tile_gpu[0].h;
+                    constants[5].i = out_tile_gpu[0].cstep;
+                    constants[6].i = out_gpu.w;
+                    constants[7].i = out_gpu.h;
+                    constants[8].i = out_gpu.cstep;
+                    constants[9].i = xi * TILE_SIZE_X;
+                    constants[10].i = std::min(yi * TILE_SIZE_Y, prepadding);
+                    constants[11].i = xi * TILE_SIZE_X * scale;
+                    constants[12].i = std::min(TILE_SIZE_X * scale, out_gpu.w - xi * TILE_SIZE_X * scale);
+                    constants[13].i = channels;
+                    constants[14].i = out_alpha_tile_gpu.w;
+                    constants[15].i = out_alpha_tile_gpu.h;
+
+                    ncnn::VkMat dispatcher;
+                    dispatcher.w = std::min(TILE_SIZE_X * scale, out_gpu.w - xi * TILE_SIZE_X * scale);
+                    dispatcher.h = out_gpu.h;
+                    dispatcher.c = channels;
+
+                    cmd.record_pipeline(realcugan_4x_postproc, bindings, constants, dispatcher);
+                }
+                else
                 {
                     std::vector<ncnn::VkMat> bindings(10);
                     bindings[0] = out_tile_gpu[0];
@@ -1651,9 +1825,47 @@ int RealCUGAN::process_se_stage2(const ncnn::Mat& inimage, const std::vector<std
                     {
                         bicubic_3x->forward(in_alpha_tile_gpu, out_alpha_tile_gpu, cmd, opt);
                     }
+                    if (scale == 4)
+                    {
+                        bicubic_4x->forward(in_alpha_tile_gpu, out_alpha_tile_gpu, cmd, opt);
+                    }
                 }
 
                 // postproc
+                if (scale == 4)
+                {
+                    std::vector<ncnn::VkMat> bindings(4);
+                    bindings[0] = in_gpu;
+                    bindings[1] = out_tile_gpu;
+                    bindings[2] = out_alpha_tile_gpu;
+                    bindings[3] = out_gpu;
+
+                    std::vector<ncnn::vk_constant_type> constants(16);
+                    constants[0].i = in_gpu.w;
+                    constants[1].i = in_gpu.h;
+                    constants[2].i = in_gpu.cstep;
+                    constants[3].i = out_tile_gpu.w;
+                    constants[4].i = out_tile_gpu.h;
+                    constants[5].i = out_tile_gpu.cstep;
+                    constants[6].i = out_gpu.w;
+                    constants[7].i = out_gpu.h;
+                    constants[8].i = out_gpu.cstep;
+                    constants[9].i = xi * TILE_SIZE_X;
+                    constants[10].i = std::min(yi * TILE_SIZE_Y, prepadding);
+                    constants[11].i = xi * TILE_SIZE_X * scale;
+                    constants[12].i = std::min(TILE_SIZE_X * scale, out_gpu.w - xi * TILE_SIZE_X * scale);
+                    constants[13].i = channels;
+                    constants[14].i = out_alpha_tile_gpu.w;
+                    constants[15].i = out_alpha_tile_gpu.h;
+
+                    ncnn::VkMat dispatcher;
+                    dispatcher.w = std::min(TILE_SIZE_X * scale, out_gpu.w - xi * TILE_SIZE_X * scale);
+                    dispatcher.h = out_gpu.h;
+                    dispatcher.c = channels;
+
+                    cmd.record_pipeline(realcugan_4x_postproc, bindings, constants, dispatcher);
+                }
+                else
                 {
                     std::vector<ncnn::VkMat> bindings(3);
                     bindings[0] = out_tile_gpu;
@@ -2316,6 +2528,10 @@ int RealCUGAN::process_cpu_se_stage2(const ncnn::Mat& inimage, const std::vector
                     {
                         bicubic_3x->forward(in_alpha_tile, out_alpha_tile, opt);
                     }
+                    if (scale == 4)
+                    {
+                        bicubic_4x->forward(in_alpha_tile, out_alpha_tile, opt);
+                    }
                 }
 
                 // postproc and merge alpha
@@ -2428,6 +2644,10 @@ int RealCUGAN::process_cpu_se_stage2(const ncnn::Mat& inimage, const std::vector
                     if (scale == 3)
                     {
                         bicubic_3x->forward(in_alpha_tile, out_alpha_tile, opt);
+                    }
+                    if (scale == 4)
+                    {
+                        bicubic_4x->forward(in_alpha_tile, out_alpha_tile, opt);
                     }
                 }
 

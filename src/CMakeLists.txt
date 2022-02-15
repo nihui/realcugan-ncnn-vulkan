@@ -226,8 +226,10 @@ endif()
 
 realcugan_add_shader(realcugan_preproc.comp)
 realcugan_add_shader(realcugan_postproc.comp)
+realcugan_add_shader(realcugan_4x_postproc.comp)
 realcugan_add_shader(realcugan_preproc_tta.comp)
 realcugan_add_shader(realcugan_postproc_tta.comp)
+realcugan_add_shader(realcugan_4x_postproc_tta.comp)
 
 add_custom_target(generate-spirv DEPENDS ${SHADER_SPV_HEX_FILES})
 
