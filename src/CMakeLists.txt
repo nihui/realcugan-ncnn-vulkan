@@ -233,6 +233,8 @@ add_custom_target(generate-spirv DEPENDS ${SHADER_SPV_HEX_FILES})
 
 add_executable(realcugan-ncnn-vulkan main.cpp realcugan.cpp)
 
+set_property(TARGET realcugan-ncnn-vulkan PROPERTY CXX_STANDARD 11)
+
 add_dependencies(realcugan-ncnn-vulkan generate-spirv)
 
 set(REALCUGAN_LINK_LIBRARIES ncnn webp ${Vulkan_LIBRARY})

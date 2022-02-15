@@ -708,6 +708,13 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    int syncgap = 0;
+
+    if (model.find(PATHSTR("models-se")) != path_t::npos)
+    {
+        syncgap = 1;
+    }
+
 #if _WIN32
     wchar_t parampath[256];
     wchar_t modelpath[256];
@@ -845,6 +852,7 @@ int main(int argc, char** argv)
             realcugan[i]->scale = scale;
             realcugan[i]->tilesize = tilesize[i];
             realcugan[i]->prepadding = prepadding;
+            realcugan[i]->syncgap = syncgap;
         }
 
         // main routine
