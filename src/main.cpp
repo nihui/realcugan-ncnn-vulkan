@@ -108,6 +108,7 @@ static void print_usage()
     fprintf(stdout, "  -n noise-level       denoise level (-1/0/1/2/3, default=-1)\n");
     fprintf(stdout, "  -s scale             upscale ratio (1/2/3/4, default=2)\n");
     fprintf(stdout, "  -t tile-size         tile size (>=32/0=auto, default=0) can be 0,0,0 for multi-gpu\n");
+    fprintf(stdout, "  -c syncgap-mode      sync gap mode (0/1/2, default=2)\n");
     fprintf(stdout, "  -m model-path        realcugan model path (default=models-se)\n");
     fprintf(stdout, "  -g gpu-id            gpu device to use (-1=cpu, default=auto) can be 0,1,2 for multi-gpu\n");
     fprintf(stdout, "  -j load:proc:save    thread count for load/proc/save (default=1:2:2) can be 1:2,2,2:2 for multi-gpu\n");
@@ -447,13 +448,14 @@ int main(int argc, char** argv)
     std::vector<int> jobs_proc;
     int jobs_save = 2;
     int verbose = 0;
+    int syncgap = 2;
     int tta_mode = 0;
     path_t format = PATHSTR("png");
 
 #if _WIN32
     setlocale(LC_ALL, "");
     wchar_t opt;
-    while ((opt = getopt(argc, argv, L"i:o:n:s:t:m:g:j:f:vxh")) != (wchar_t)-1)
+    while ((opt = getopt(argc, argv, L"i:o:n:s:t:c:m:g:j:f:vxh")) != (wchar_t)-1)
     {
         switch (opt)
         {
@@ -471,6 +473,9 @@ int main(int argc, char** argv)
             break;
         case L't':
             tilesize = parse_optarg_int_array(optarg);
+            break;
+        case L'c':
+            syncgap = _wtoi(optarg);
             break;
         case L'm':
             model = optarg;
@@ -499,7 +504,7 @@ int main(int argc, char** argv)
     }
 #else // _WIN32
     int opt;
-    while ((opt = getopt(argc, argv, "i:o:n:s:t:m:g:j:f:vxh")) != -1)
+    while ((opt = getopt(argc, argv, "i:o:n:s:t:c:m:g:j:f:vxh")) != -1)
     {
         switch (opt)
         {
@@ -517,6 +522,9 @@ int main(int argc, char** argv)
             break;
         case 't':
             tilesize = parse_optarg_int_array(optarg);
+            break;
+        case 'c':
+            syncgap = atoi(optarg);
             break;
         case 'm':
             model = optarg;
@@ -566,6 +574,12 @@ int main(int argc, char** argv)
     if (tilesize.size() != (gpuid.empty() ? 1 : gpuid.size()) && !tilesize.empty())
     {
         fprintf(stderr, "invalid tilesize argument\n");
+        return -1;
+    }
+
+    if (!(syncgap == 0 || syncgap == 1 || syncgap == 2))
+    {
+        fprintf(stderr, "invalid syncgap argument\n");
         return -1;
     }
 
@@ -708,11 +722,10 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    int syncgap = 0;
-
-    if (model.find(PATHSTR("models-se")) != path_t::npos)
+    if (model.find(PATHSTR("models-nose")) != path_t::npos)
     {
-        syncgap = 1;
+        // force syncgap off for nose models
+        syncgap = 0;
     }
 
 #if _WIN32

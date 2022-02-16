@@ -247,7 +247,12 @@ int RealCUGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
     {
         // cpu only
         if (syncgap_needed && syncgap)
-            return process_cpu_se(inimage, outimage);
+        {
+            if (syncgap == 1)
+                return process_cpu_se(inimage, outimage);
+            if (syncgap == 2)
+                return process_cpu_se_rough(inimage, outimage);
+        }
         else
             return process_cpu(inimage, outimage);
     }
@@ -259,7 +264,12 @@ int RealCUGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
     }
 
     if (syncgap_needed && syncgap)
-        return process_se(inimage, outimage);
+    {
+        if (syncgap == 1)
+            return process_se(inimage, outimage);
+        if (syncgap == 2)
+            return process_se_rough(inimage, outimage);
+    }
 
     const unsigned char* pixeldata = (const unsigned char*)inimage.data;
     const int w = inimage.w;
@@ -1141,6 +1151,36 @@ int RealCUGAN::process_se(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
     return 0;
 }
 
+int RealCUGAN::process_se_rough(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
+{
+    ncnn::VkAllocator* blob_vkallocator = vkdev->acquire_blob_allocator();
+    ncnn::VkAllocator* staging_vkallocator = vkdev->acquire_staging_allocator();
+
+    ncnn::Option opt = net.opt;
+    opt.blob_vkallocator = blob_vkallocator;
+    opt.workspace_vkallocator = blob_vkallocator;
+    opt.staging_vkallocator = staging_vkallocator;
+
+    FeatureCache cache;
+
+    std::vector<std::string> in0 = {};
+    std::vector<std::string> out0 = {"gap0", "gap1", "gap2", "gap3"};
+    process_se_stage0(inimage, in0, out0, opt, cache);
+
+    std::vector<std::string> gap0 = {"gap0", "gap1", "gap2", "gap3"};
+    process_se_sync_gap(inimage, gap0, opt, cache);
+
+    std::vector<std::string> in4 = {"gap0", "gap1", "gap2", "gap3"};
+    process_se_stage2(inimage, in4, outimage, opt, cache);
+
+    cache.clear();
+
+    vkdev->reclaim_blob_allocator(blob_vkallocator);
+    vkdev->reclaim_staging_allocator(staging_vkallocator);
+
+    return 0;
+}
+
 int RealCUGAN::process_cpu_se(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
 {
     FeatureCache cache;
@@ -1172,6 +1212,25 @@ int RealCUGAN::process_cpu_se(const ncnn::Mat& inimage, ncnn::Mat& outimage) con
 
     std::vector<std::string> gap3 = {"gap3"};
     process_cpu_se_sync_gap(inimage, gap3, cache);
+
+    std::vector<std::string> in4 = {"gap0", "gap1", "gap2", "gap3"};
+    process_cpu_se_stage2(inimage, in4, outimage, cache);
+
+    cache.clear();
+
+    return 0;
+}
+
+int RealCUGAN::process_cpu_se_rough(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
+{
+    FeatureCache cache;
+
+    std::vector<std::string> in0 = {};
+    std::vector<std::string> out0 = {"gap0", "gap1", "gap2", "gap3"};
+    process_cpu_se_stage0(inimage, in0, out0, cache);
+
+    std::vector<std::string> gap0 = {"gap0", "gap1", "gap2", "gap3"};
+    process_cpu_se_sync_gap(inimage, gap0, cache);
 
     std::vector<std::string> in4 = {"gap0", "gap1", "gap2", "gap3"};
     process_cpu_se_stage2(inimage, in4, outimage, cache);
