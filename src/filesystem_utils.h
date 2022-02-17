@@ -132,6 +132,9 @@ static path_t get_executable_directory()
     uint32_t size = sizeof(filepath);
     _NSGetExecutablePath(filepath, &size);
 
+    char* slash = strrchr(filepath, '/');
+    slash[1] = '\0';
+
     return path_t(filepath);
 }
 #else
