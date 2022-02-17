@@ -841,19 +841,7 @@ int main(int argc, char** argv)
         {
             if (scale == 2)
             {
-                if (heap_budget > 7200)
-                    tilesize[i] = 1000;
-                else if (heap_budget > 5880)
-                    tilesize[i] = 900;
-                else if (heap_budget > 4690)
-                    tilesize[i] = 800;
-                else if (heap_budget > 3640)
-                    tilesize[i] = 700;
-                else if (heap_budget > 2730)
-                    tilesize[i] = 600;
-                else if (heap_budget > 1940)
-                    tilesize[i] = 500;
-                else if (heap_budget > 1300)
+                if (heap_budget > 1300)
                     tilesize[i] = 400;
                 else if (heap_budget > 800)
                     tilesize[i] = 300;
@@ -866,11 +854,7 @@ int main(int argc, char** argv)
             }
             if (scale == 3)
             {
-                if (heap_budget > 7200)
-                    tilesize[i] = 600;
-                else if (heap_budget > 5070)
-                    tilesize[i] = 500;
-                else if (heap_budget > 3300)
+                if (heap_budget > 3300)
                     tilesize[i] = 400;
                 else if (heap_budget > 1900)
                     tilesize[i] = 300;
@@ -883,15 +867,7 @@ int main(int argc, char** argv)
             }
             if (scale == 4)
             {
-                if (heap_budget > 6100)
-                    tilesize[i] = 800;
-                else if (heap_budget > 4740)
-                    tilesize[i] = 700;
-                else if (heap_budget > 3550)
-                    tilesize[i] = 600;
-                else if (heap_budget > 2540)
-                    tilesize[i] = 500;
-                else if (heap_budget > 1690)
+                if (heap_budget > 1690)
                     tilesize[i] = 400;
                 else if (heap_budget > 980)
                     tilesize[i] = 300;
