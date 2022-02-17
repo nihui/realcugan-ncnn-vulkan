@@ -108,7 +108,7 @@ static void print_usage()
     fprintf(stdout, "  -n noise-level       denoise level (-1/0/1/2/3, default=-1)\n");
     fprintf(stdout, "  -s scale             upscale ratio (1/2/3/4, default=2)\n");
     fprintf(stdout, "  -t tile-size         tile size (>=32/0=auto, default=0) can be 0,0,0 for multi-gpu\n");
-    fprintf(stdout, "  -c syncgap-mode      sync gap mode (0/1/2, default=2)\n");
+    fprintf(stdout, "  -c syncgap-mode      sync gap mode (0/1/2/3, default=3)\n");
     fprintf(stdout, "  -m model-path        realcugan model path (default=models-se)\n");
     fprintf(stdout, "  -g gpu-id            gpu device to use (-1=cpu, default=auto) can be 0,1,2 for multi-gpu\n");
     fprintf(stdout, "  -j load:proc:save    thread count for load/proc/save (default=1:2:2) can be 1:2,2,2:2 for multi-gpu\n");
@@ -448,7 +448,7 @@ int main(int argc, char** argv)
     std::vector<int> jobs_proc;
     int jobs_save = 2;
     int verbose = 0;
-    int syncgap = 2;
+    int syncgap = 3;
     int tta_mode = 0;
     path_t format = PATHSTR("png");
 
@@ -577,7 +577,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    if (!(syncgap == 0 || syncgap == 1 || syncgap == 2))
+    if (!(syncgap == 0 || syncgap == 1 || syncgap == 2 || syncgap == 3))
     {
         fprintf(stderr, "invalid syncgap argument\n");
         return -1;
