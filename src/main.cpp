@@ -839,14 +839,69 @@ int main(int argc, char** argv)
         // more fine-grained tilesize policy here
         if (model.find(PATHSTR("models-nose")) != path_t::npos || model.find(PATHSTR("models-se")) != path_t::npos)
         {
-            if (heap_budget > 2600)
-                tilesize[i] = 400;
-            else if (heap_budget > 740)
-                tilesize[i] = 200;
-            else if (heap_budget > 250)
-                tilesize[i] = 100;
-            else
-                tilesize[i] = 32;
+            if (scale == 2)
+            {
+                if (heap_budget > 7200)
+                    tilesize[i] = 1000;
+                else if (heap_budget > 5880)
+                    tilesize[i] = 900;
+                else if (heap_budget > 4690)
+                    tilesize[i] = 800;
+                else if (heap_budget > 3640)
+                    tilesize[i] = 700;
+                else if (heap_budget > 2730)
+                    tilesize[i] = 600;
+                else if (heap_budget > 1940)
+                    tilesize[i] = 500;
+                else if (heap_budget > 1300)
+                    tilesize[i] = 400;
+                else if (heap_budget > 800)
+                    tilesize[i] = 300;
+                else if (heap_budget > 400)
+                    tilesize[i] = 200;
+                else if (heap_budget > 200)
+                    tilesize[i] = 100;
+                else
+                    tilesize[i] = 32;
+            }
+            if (scale == 3)
+            {
+                if (heap_budget > 7200)
+                    tilesize[i] = 600;
+                else if (heap_budget > 5070)
+                    tilesize[i] = 500;
+                else if (heap_budget > 3300)
+                    tilesize[i] = 400;
+                else if (heap_budget > 1900)
+                    tilesize[i] = 300;
+                else if (heap_budget > 950)
+                    tilesize[i] = 200;
+                else if (heap_budget > 320)
+                    tilesize[i] = 100;
+                else
+                    tilesize[i] = 32;
+            }
+            if (scale == 4)
+            {
+                if (heap_budget > 6100)
+                    tilesize[i] = 800;
+                else if (heap_budget > 4740)
+                    tilesize[i] = 700;
+                else if (heap_budget > 3550)
+                    tilesize[i] = 600;
+                else if (heap_budget > 2540)
+                    tilesize[i] = 500;
+                else if (heap_budget > 1690)
+                    tilesize[i] = 400;
+                else if (heap_budget > 980)
+                    tilesize[i] = 300;
+                else if (heap_budget > 530)
+                    tilesize[i] = 200;
+                else if (heap_budget > 240)
+                    tilesize[i] = 100;
+                else
+                    tilesize[i] = 32;
+            }
         }
     }
 
