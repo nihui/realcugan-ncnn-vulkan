@@ -29,7 +29,7 @@ jobs:
     env:
       PACKAGENAME: ${{ needs.setup.outputs.APPNAME }}-${{ needs.setup.outputs.VERSION }}-ubuntu
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
     - name: cache-vulkansdk
@@ -76,7 +76,7 @@ jobs:
         key: openmp-macos-release-11.0.0
     - name: checkout
       if: steps.cache-openmp.outputs.cache-hit != 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: openmp
       if: steps.cache-openmp.outputs.cache-hit != 'true'
       run: |
@@ -123,7 +123,7 @@ jobs:
     env:
       PACKAGENAME: ${{ needs.setup.outputs.APPNAME }}-${{ needs.setup.outputs.VERSION }}-macos
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
     - name: download-openmp-macos
@@ -195,7 +195,7 @@ jobs:
     env:
       PACKAGENAME: ${{ needs.setup.outputs.APPNAME }}-${{ needs.setup.outputs.VERSION }}-windows
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
     - name: cache-vulkansdk
