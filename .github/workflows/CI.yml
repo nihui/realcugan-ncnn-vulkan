@@ -11,7 +11,7 @@ jobs:
         submodules: 'recursive'
     - name: cache-vulkansdk
       id: cache-vulkansdk
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: "VulkanSDK"
         key: VulkanSDK-1.2.170.0-Installer
@@ -36,7 +36,7 @@ jobs:
         submodules: 'recursive'
     - name: cache-vulkansdk
       id: cache-vulkansdk
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: "1.2.170.0"
         key: vulkansdk-linux-x86_64-1.2.170.0
@@ -62,7 +62,7 @@ jobs:
         submodules: 'recursive'
     - name: cache-vulkansdk
       id: cache-vulkansdk
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: "vulkansdk-macos-1.2.170.0"
         key: vulkansdk-macos-1.2.170.0

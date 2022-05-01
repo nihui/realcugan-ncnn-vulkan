@@ -34,7 +34,7 @@ jobs:
         submodules: 'recursive'
     - name: cache-vulkansdk
       id: cache-vulkansdk
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: "1.2.170.0"
         key: vulkansdk-linux-x86_64-1.2.170.0
@@ -70,7 +70,7 @@ jobs:
     steps:
     - name: cache-openmp
       id: cache-openmp
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: openmp-install
         key: openmp-macos-release-11.0.0
@@ -137,7 +137,7 @@ jobs:
         sudo cp openmp-macos/lib/libomp.a $DEVELOPER_DIR/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib
     - name: cache-vulkansdk
       id: cache-vulkansdk
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: "vulkansdk-macos-1.2.170.0"
         key: vulkansdk-macos-1.2.170.0
@@ -200,7 +200,7 @@ jobs:
         submodules: 'recursive'
     - name: cache-vulkansdk
       id: cache-vulkansdk
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: "VulkanSDK"
         key: VulkanSDK-1.2.170.0-Installer
