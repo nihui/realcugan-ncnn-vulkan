@@ -6,7 +6,9 @@ project(realcugan-ncnn-vulkan)
 
 cmake_minimum_required(VERSION 3.9)
 
-set(CMAKE_BUILD_TYPE Release)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE release CACHE STRING "Choose the type of build" FORCE)
+endif()
 
 option(USE_SYSTEM_NCNN "build with system libncnn" OFF)
 option(USE_SYSTEM_WEBP "build with system libwebp" OFF)
