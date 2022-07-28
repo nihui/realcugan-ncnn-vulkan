@@ -701,7 +701,9 @@ int main(int argc, char** argv)
 
     int prepadding = 0;
 
-    if (model.find(PATHSTR("models-se")) != path_t::npos || model.find(PATHSTR("models-nose")) != path_t::npos)
+    if (model.find(PATHSTR("models-se")) != path_t::npos
+        || model.find(PATHSTR("models-nose")) != path_t::npos
+        || model.find(PATHSTR("models-pro")) != path_t::npos)
     {
         if (scale == 2)
         {
@@ -845,7 +847,7 @@ int main(int argc, char** argv)
         }
 
         // more fine-grained tilesize policy here
-        if (model.find(PATHSTR("models-nose")) != path_t::npos || model.find(PATHSTR("models-se")) != path_t::npos)
+        if (model.find(PATHSTR("models-nose")) != path_t::npos || model.find(PATHSTR("models-se")) != path_t::npos || model.find(PATHSTR("models-pro")) != path_t::npos)
         {
             if (scale == 2)
             {
